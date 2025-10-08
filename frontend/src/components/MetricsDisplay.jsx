@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Activity, Target, TrendingUp, Award } from 'lucide-react'
+import { Activity, Target, TrendingUp, Award, CheckCircle, BarChart } from 'lucide-react'
 import axios from 'axios'
 import { API_ENDPOINTS } from '../config'
 
 export default function MetricsDisplay() {
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
     fetchMetrics()
   }, [])
 
   const fetchMetrics = async () => {
     try {
-      const response = await axios.get('http://localhost:5001/api/metrics')
+      const response = await axios.get(API_ENDPOINTS.metrics)
       if (response.data.status === 'success') {
         setMetrics(response.data.metrics)
       }
