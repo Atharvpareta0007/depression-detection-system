@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, Target, CheckCircle, BarChart } from 'lucide-react'
+import { Activity, Target, TrendingUp, Award } from 'lucide-react'
 import axios from 'axios'
+import { API_ENDPOINTS } from '../config'
 
 export default function MetricsDisplay() {
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
     fetchMetrics()
   }, [])
 

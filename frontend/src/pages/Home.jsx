@@ -7,6 +7,7 @@ import AudioRecorder from '../components/AudioRecorder'
 import ResultCard from '../components/ResultCard'
 import SpectrogramViewer from '../components/SpectrogramViewer'
 import MetricsDisplay from '../components/MetricsDisplay'
+import { API_ENDPOINTS } from '../config'
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState(null)
@@ -51,7 +52,7 @@ export default function Home() {
     formData.append('file', selectedFile)
 
     try {
-      const response = await axios.post('http://localhost:5001/api/predict', formData, {
+      const response = await axios.post(API_ENDPOINTS.predict, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

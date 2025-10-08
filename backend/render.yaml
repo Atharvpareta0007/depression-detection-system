@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: depression-detection-api
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: FLASK_ENV
+        value: production

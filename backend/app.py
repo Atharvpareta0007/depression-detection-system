@@ -24,7 +24,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from inference import DepressionDetector
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS for both local and production
+CORS(app, origins=[
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://*.vercel.app',
+    'https://depression-detection-system.vercel.app'
+])
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -223,12 +229,17 @@ def get_info():
 
 
 if __name__ == '__main__':
+    # Use PORT environment variable for deployment platforms
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
     print("="*60)
     print("Depression Detection API Server")
     print("="*60)
     print(f"Model loaded: {'✓ Yes' if detector else '✗ No'}")
     print(f"Model accuracy: 75%")
-    print(f"Running on: http://localhost:5001")
+    print(f"Running on: http://0.0.0.0:{port}")
+    print(f"Environment: {'Production' if not debug else 'Development'}")
     print("="*60)
     
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=debug, host='0.0.0.0', port=port)
