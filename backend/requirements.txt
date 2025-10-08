@@ -1,0 +1,8 @@
+flask
+flask-cors
+torch
+librosa
+numpy
+matplotlib
+soundfile
+werkzeug
