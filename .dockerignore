@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+*.md
+!README.md
+
+# Environment files
+.env.local
+.env.development
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Temporary files
+temp_*.wav
+temp_*.mp3
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Deployment configs for other platforms
+vercel.json
+netlify.toml
+render.yaml
