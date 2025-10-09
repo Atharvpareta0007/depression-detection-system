@@ -1,13 +1,20 @@
-# Core ML dependencies (CPU compatible for Streamlit Cloud)
+# Core ML dependencies (CPU compatible)
 torch==2.7.0+cpu
 torchvision==0.22.0+cpu
 torchaudio==2.7.0+cpu
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-# General dependencies
+# ML/Data processing
 numpy
 pandas
 scikit-learn
 opencv-python-headless
 Pillow
+librosa
+soundfile
+
+# Web/App frameworks
 streamlit
+flask
+flask-cors
+matplotlib==3.9.2
