@@ -12,9 +12,13 @@ opencv-python-headless
 Pillow
 librosa
 soundfile
+scipy
+
+# Visualization
+plotly
+matplotlib==3.9.2
 
 # Web/App frameworks
 streamlit
 flask
 flask-cors
-matplotlib==3.9.2
