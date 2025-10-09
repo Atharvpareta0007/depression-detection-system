@@ -6,3 +6,11 @@ numpy
 matplotlib
 soundfile
 werkzeug
+torch
+torchvision
+torchaudio
+numpy
+pandas
+scikit-learn
+opencv-python-headless
+streamlit
