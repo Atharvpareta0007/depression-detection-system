@@ -1,9 +1,10 @@
-# Core ML dependencies
-torch==2.5.1
-
-torchvision==0.17.2+cpu
-torchaudio==2.2.2+cpu
+# Tell pip to include PyTorch CPU wheels
 --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Core ML dependencies
+torch==2.5.1+cpu
+torchvision==0.22.1+cpu
+torchaudio==2.5.1+cpu
 
 # Supporting libraries
 numpy
