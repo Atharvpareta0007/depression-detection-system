@@ -3,6 +3,13 @@ Depression detection inference system
 Uses the best trained model (75% accuracy) for predictions
 """
 
+import sys
+import os
+
+# Add current directory to path for imports
+current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, current_dir)
+
 import torch
 import numpy as np
 import librosa
@@ -40,7 +47,7 @@ class DepressionDetector:
             self.model = DepressionDetectionModel(
                 speech_features=120,
                 speech_length=31,
-                dropout=0.6
+                dropout=0.6  # Matches the trained model
             ).to(self.device)
             
             # Load state dict

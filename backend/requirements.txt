@@ -2,14 +2,30 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Core ML dependencies
-torch==2.5.1+cpu
-torchvision==0.22.1+cpu
-torchaudio==2.5.1+cpu
+torch==2.5.1
+torchaudio==2.5.1
 
-# Supporting libraries
+# Data processing and ML
 numpy
 pandas
 scikit-learn
-opencv-python-headless
-streamlit
+
+# Audio processing
+librosa
+soundfile
+
+# Visualization
+matplotlib
+seaborn
+plotly
+
+# Web framework
+flask
+flask-cors
+
+# File handling
 Pillow
+
+# Additional utilities
+tqdm
+python-dotenv

@@ -33,7 +33,7 @@ class DepressionDetectionModel(nn.Module):
         # Global average pooling
         self.global_pool = nn.AdaptiveAvgPool1d(1)
         
-        # Enhanced classifier with progressive dropout
+        # Enhanced classifier with progressive dropout (matches saved model)
         self.classifier = nn.Sequential(
             nn.Linear(256, 256),
             nn.ReLU(),

@@ -1,0 +1,19 @@
+# Core ML
+torch>=2.6.0
+torchvision
+torchaudio
+
+# Audio processing
+librosa>=0.10.0
+soundfile
+pydub
+
+# Visualization
+plotly
+matplotlib
+
+# App frameworks
+streamlit
+streamlit-webrtc
+flask
+flask-cors

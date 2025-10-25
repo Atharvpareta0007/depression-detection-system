@@ -1,0 +1,5 @@
+audio_path,label
+data/audio/healthy_001.wav,0
+data/audio/healthy_002.wav,0
+data/audio/depressed_001.wav,1
+data/audio/depressed_002.wav,1
