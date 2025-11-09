@@ -2,8 +2,41 @@ import { motion } from 'framer-motion'
 import { CheckCircle, AlertCircle, TrendingUp } from 'lucide-react'
 
 export default function ResultCard({ result }) {
+  // Handle both old and new API response formats
+  const probabilities = result.probabilities || result.class_probs || {}
+  
+  // Handle null predictions (OOD, unsupported language, etc.)
+  if (!result.prediction) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="glass-card p-8 bg-gradient-to-br from-yellow-600/20 to-orange-600/20 border-2 border-yellow-500/50"
+      >
+        <div className="flex items-center space-x-4 mb-4">
+          <AlertCircle className="w-16 h-16 text-yellow-400" />
+          <div>
+            <h2 className="text-3xl font-bold">Prediction Unavailable</h2>
+            <p className="text-white/70">{result.reason || 'Unable to make prediction'}</p>
+          </div>
+        </div>
+        {result.out_of_distribution && (
+          <p className="text-yellow-300 text-sm mt-4">
+            ⚠️ This sample appears to be out of distribution. The model may not be reliable for this input.
+          </p>
+        )}
+        {result.language && !result.language.lang?.includes('en') && (
+          <p className="text-yellow-300 text-sm mt-4">
+            ⚠️ Language detected: {result.language.lang}. The model is optimized for English audio.
+          </p>
+        )}
+      </motion.div>
+    )
+  }
+  
   const isHealthy = result.prediction === 'Healthy'
-  const confidence = (result.confidence * 100).toFixed(1)
+  const confidence = result.confidence ? (result.confidence * 100).toFixed(1) : '0.0'
   
   const Icon = isHealthy ? CheckCircle : AlertCircle
   const bgColor = isHealthy ? 'from-green-600/20 to-emerald-600/20' : 'from-red-600/20 to-orange-600/20'
@@ -60,7 +93,7 @@ export default function ResultCard({ result }) {
             <TrendingUp className="w-4 h-4 text-green-400" />
           </div>
           <div className="text-2xl font-bold text-green-400">
-            {(result.probabilities.Healthy * 100).toFixed(1)}%
+            {((probabilities.Healthy || 0) * 100).toFixed(1)}%
           </div>
         </div>
         
@@ -70,7 +103,7 @@ export default function ResultCard({ result }) {
             <TrendingUp className="w-4 h-4 text-red-400" />
           </div>
           <div className="text-2xl font-bold text-red-400">
-            {(result.probabilities.Depressed * 100).toFixed(1)}%
+            {((probabilities.Depressed || 0) * 100).toFixed(1)}%
           </div>
         </div>
       </div>

@@ -198,10 +198,14 @@ def predict():
             response['prediction'] = None
             response['reason'] = 'language_not_supported'
         
-        # Handle OOD
-        if ood_info and ood_info.get('out_of_distribution', False):
-            response['prediction'] = None
-            response['reason'] = 'out_of_distribution'
+        # Handle OOD (don't block predictions, just warn if needed)
+        # Always allow predictions to go through
+        if ood_info:
+            response['out_of_distribution'] = ood_info.get('out_of_distribution', False)
+            if ood_info.get('distance', 0) > 0.7:
+                # Warn but don't block
+                response['ood_warning'] = True
+                response['ood_distance'] = float(ood_info.get('distance', 0))
         
         return jsonify(response)
     

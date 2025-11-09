@@ -59,7 +59,12 @@ export default function Home() {
       })
 
       if (response.data.status === 'success') {
-        setResult(response.data)
+        // Normalize response format for compatibility
+        const normalizedResult = {
+          ...response.data,
+          probabilities: response.data.probabilities || response.data.class_probs || {}
+        }
+        setResult(normalizedResult)
       } else {
         setError(response.data.error || 'An error occurred during prediction')
       }

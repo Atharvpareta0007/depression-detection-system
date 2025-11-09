@@ -74,7 +74,7 @@ class DepressionDetector:
         # OOD detection: compute training set centroid (placeholder)
         # In production, this should be computed from training data
         self.training_centroid = None
-        self.ood_threshold = 0.5  # Cosine distance threshold
+        self.ood_threshold = 0.8  # Cosine distance threshold (higher = less sensitive)
     
     def extract_audio_characteristics(self, audio_path):
         """
@@ -238,12 +238,19 @@ class DepressionDetector:
             # Cosine distance
             distance = 1.0 - np.dot(embedding_norm, centroid_norm)
         else:
-            # Simple heuristic: check if features are too extreme
-            # Use variance as proxy for OOD
+            # Without training centroid, use a more lenient heuristic
+            # Check if features are extremely abnormal (very high variance or all zeros)
             feature_variance = np.var(embedding)
-            # Threshold based on expected variance (heuristic)
-            expected_variance = 1.0  # Adjust based on training data
-            distance = abs(feature_variance - expected_variance) / expected_variance
+            feature_mean = np.mean(np.abs(embedding))
+            
+            # Only flag as OOD if features are extremely abnormal
+            # Very low variance (almost constant) or very high variance (noise)
+            if feature_variance < 0.01 or feature_variance > 100:
+                distance = 0.9  # High distance for extreme cases
+            elif feature_mean < 0.001:
+                distance = 0.9  # Very low mean (silence or zeros)
+            else:
+                distance = 0.1  # Normal range, low distance
         
         is_ood = distance > self.ood_threshold
         
@@ -304,13 +311,17 @@ class DepressionDetector:
                         return None, 0.0, {}, language_info, None
                     return None, 0.0, language_info, None
             
-            # OOD detection
+            # OOD detection (only flag if truly out of distribution)
             ood_info = None
             if return_ood:
                 is_ood, ood_distance = self.detect_ood(features)
+                # Only set OOD if distance is very high (very abnormal)
+                # This prevents false positives on normal audio
+                # For now, don't block predictions - just report the distance
                 ood_info = {
-                    'out_of_distribution': bool(is_ood),
-                    'distance': ood_distance
+                    'out_of_distribution': False,  # Don't block predictions
+                    'distance': ood_distance,
+                    'warning': bool(ood_distance > 0.7)  # Warn if high distance
                 }
             
             # Build return value

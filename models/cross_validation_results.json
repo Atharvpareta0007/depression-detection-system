@@ -1,0 +1,19 @@
+{
+  "mean_accuracy": 0.5,
+  "std_accuracy": 0.0,
+  "best_fold_accuracy": 0.5,
+  "fold_accuracies": [
+    0.5,
+    0.5
+  ],
+  "num_folds": 2,
+  "training_config": {
+    "num_epochs": 10,
+    "patience": 5,
+    "dropout": 0.4,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "output_dir": "models",
+    "augment": true
+  }
+}

@@ -84,8 +84,8 @@ def train_epoch(model, dataloader, criterion, optimizer, scheduler, device):
         all_predictions.extend(predicted.cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
 
-    # Update scheduler
-    scheduler.step()
+    # Update scheduler (ReduceLROnPlateau needs loss value, not called here)
+    # Scheduler will be updated in training loop with validation loss
 
     avg_loss = total_loss / len(dataloader)
     accuracy = accuracy_score(all_labels, all_predictions)
@@ -180,6 +180,9 @@ def train_model_with_early_stopping(train_files, train_labels, val_files, val_la
         val_loss, val_accuracy, val_precision, val_recall, val_f1, val_predictions, val_labels = validate_epoch(
             model, val_loader, criterion, device
         )
+        
+        # Update scheduler with validation loss
+        scheduler.step(val_loss)
 
         # Update history
         history['train_loss'].append(train_loss)
