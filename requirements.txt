@@ -1,0 +1,10 @@
+# Production requirements
+# Backend requirements
+-r backend/requirements.txt
+
+# Production server
+gunicorn>=21.2.0
+
+# Additional production dependencies
+python-dotenv>=1.0.0
+

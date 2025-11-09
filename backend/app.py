@@ -18,40 +18,76 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+# Load configuration
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from config import config
 
 from inference import DepressionDetector
 from explain.saliency import explain_audio
 from preprocessing.language_detection import is_supported_language
 
+# Get environment
+env = os.environ.get('FLASK_ENV', 'development')
+app_config = config.get(env, config['default'])
+
 app = Flask(__name__)
-# Configure CORS for both local and production
-CORS(app, origins=[
+app.config.from_object(app_config)
+app_config.init_app(app)
+
+# Configure CORS
+CORS_ORIGINS = app.config.get('CORS_ORIGINS', [
     'http://localhost:5173',
     'http://localhost:5174',
     'https://*.vercel.app',
     'https://depression-detection-system.vercel.app'
 ])
+CORS(app, origins=CORS_ORIGINS)
 
 # Configuration
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'wav', 'mp3', 'flac'}
-MODEL_PATH = '../models/best_model.pth'
+UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
+ALLOWED_EXTENSIONS = app.config['ALLOWED_EXTENSIONS']
+MODEL_PATH = app.config['MODEL_PATH']
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+# Setup logging
+if not app.debug:
+    if not os.path.exists(os.path.dirname(app.config['LOG_FILE'])):
+        os.makedirs(os.path.dirname(app.config['LOG_FILE']), exist_ok=True)
+    
+    file_handler = RotatingFileHandler(
+        app.config['LOG_FILE'], 
+        maxBytes=10240000, 
+        backupCount=10
+    )
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(getattr(logging, app.config['LOG_LEVEL']))
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(getattr(logging, app.config['LOG_LEVEL']))
+    app.logger.info('Application startup')
 
 # Load model at startup
 detector = None
 try:
-    model_path = os.path.join(os.path.dirname(__file__), MODEL_PATH)
+    # Use absolute path for model
+    if not os.path.isabs(MODEL_PATH):
+        model_path = os.path.join(os.path.dirname(__file__), '..', MODEL_PATH)
+    else:
+        model_path = MODEL_PATH
+    
+    model_path = os.path.abspath(model_path)
     detector = DepressionDetector(model_path)
-    print("✓ Depression detection model loaded successfully")
+    app.logger.info(f"✓ Depression detection model loaded successfully from {model_path}")
 except Exception as e:
-    print(f"⚠️  Warning: Could not load model: {e}")
+    app.logger.error(f"⚠️  Warning: Could not load model: {e}")
+    if app.debug:
+        print(f"⚠️  Warning: Could not load model: {e}")
 
 
 def allowed_file(filename):
@@ -348,9 +384,9 @@ def explain():
 
 
 if __name__ == '__main__':
-    # Use PORT environment variable for deployment platforms
-    port = int(os.environ.get('PORT', 5001))
-    debug = os.environ.get('FLASK_ENV') != 'production'
+    # Use PORT from config
+    port = app.config['PORT']
+    debug = app.config['DEBUG']
     
     print("="*60)
     print("Depression Detection API Server")
@@ -358,7 +394,8 @@ if __name__ == '__main__':
     print(f"Model loaded: {'✓ Yes' if detector else '✗ No'}")
     print(f"Model accuracy: 75%")
     print(f"Running on: http://0.0.0.0:{port}")
-    print(f"Environment: {'Production' if not debug else 'Development'}")
+    print(f"Environment: {app.config['FLASK_ENV']}")
+    print(f"Debug mode: {debug}")
     print("="*60)
     
     app.run(debug=debug, host='0.0.0.0', port=port)

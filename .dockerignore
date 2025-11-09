@@ -1,5 +1,10 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
 # Python
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 *.so
@@ -22,7 +27,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # Node
 node_modules/
@@ -50,56 +54,57 @@ yarn-error.log*
 htmlcov/
 .tox/
 .hypothesis/
-.pytest_cache/
+
+# Documentation
+docs/_build/
+*.md
+!README.md
+
+# Data (exclude large files)
+data/audio/*
+!data/audio/.gitkeep
+data/training_data.csv
+
+# Models (exclude large model files in some cases)
+# models/*.pth
+# Uncomment above if you don't want to include models in Docker
+
+# Logs
+logs/
+*.log
 
 # Environment
 .env
 .env.local
 .env.*.local
 
-# Logs
-logs/
-*.log
-
-# Uploads
-uploads/*
-!uploads/.gitkeep
-
-# Data (keep structure, exclude large files)
-data/audio/*.wav
-data/audio/*.mp3
-data/audio/*.flac
-!data/audio/.gitkeep
-
-# Models (keep structure, exclude large files)
-# Uncomment if you don't want to track model files
-# models/*.pth
-# models/*.pkl
-
-# Reports
-reports/*
-!reports/.gitkeep
+# Deployment
+deployment/
+*.yaml
+*.yml
+!docker-compose.yml
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Reports
+reports/*
+!reports/.gitkeep
+
+# Notebooks
+notebooks/
+*.ipynb
+
+# CI/CD
+.github/
+
 # OS
 Thumbs.db
 .DS_Store
 
-# Deployment artifacts
-*.tar.gz
-*.zip
-
-# Jupyter Notebooks
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Distribution / packaging
-dist/
-build/
-*.egg-info/

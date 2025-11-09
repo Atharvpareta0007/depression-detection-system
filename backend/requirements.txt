@@ -29,3 +29,6 @@ Pillow
 # Additional utilities
 tqdm
 python-dotenv
+
+# Production server (optional, install separately)
+# gunicorn>=21.2.0

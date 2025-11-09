@@ -9,21 +9,26 @@ RUN apt-get update && apt-get install -y \
     libsndfile1 \
     ffmpeg \
     git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY backend/requirements.txt .
+COPY backend/requirements.txt requirements.txt
+COPY requirements.txt requirements-prod.txt
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-prod.txt
 
 # Copy source code and models
 COPY src/ ./src/
 COPY models/ ./models/
 COPY backend/ ./backend/
+COPY config.py ./
+COPY gunicorn_config.py ./
 
-# Create uploads directory
-RUN mkdir -p backend/uploads
+# Create necessary directories
+RUN mkdir -p backend/uploads logs
 
 # Set working directory to backend
 WORKDIR /app/backend
@@ -38,7 +43,9 @@ ENV PORT=5001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5001/api/metrics')"
+    CMD curl -f http://localhost:5001/api/metrics || exit 1
 
-# Run the application
-CMD ["python", "app.py"]
+# Run with gunicorn for production
+# Run from /app/backend directory where wsgi.py is located
+WORKDIR /app/backend
+CMD ["gunicorn", "-c", "../gunicorn_config.py", "wsgi:app"]
