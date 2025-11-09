@@ -29,6 +29,43 @@ depression-detection/
 └── docs/                  # Documentation
 ```
 
+## 🧪 **Testing**
+
+### Running Tests
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ -v --cov=src --cov=backend --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_preprocessing.py -v
+
+# Run smoke inference test
+python scripts/smoke_inference.py
+```
+
+### Test Structure
+
+- `tests/test_preprocessing.py`: Audio preprocessing tests
+- `tests/test_features.py`: MFCC feature extraction tests
+- `tests/test_inference.py`: Model inference tests
+- `tests/test_api.py`: Flask API endpoint tests
+
+### CI/CD
+
+GitHub Actions CI runs automatically on push/PR:
+- Linting with flake8
+- Unit tests with pytest
+- Smoke inference test
+
+See `.github/workflows/ci.yml` for details.
+
 ## 🚀 **Quick Start**
 
 ### Option 1: Streamlit App (Recommended)
@@ -96,11 +133,40 @@ curl -X POST http://localhost:5001/api/predict \
   "status": "success",
   "prediction": "Healthy",
   "confidence": 0.742,
-  "probabilities": {
+  "class_probs": {
     "Healthy": 0.742,
     "Depressed": 0.258
   },
+  "language": {
+    "lang": "en",
+    "confidence": 0.92
+  },
+  "out_of_distribution": false,
   "spectrogram": "data:image/png;base64,..."
+}
+```
+
+### Explainability
+
+```bash
+curl -X POST http://localhost:5001/api/explain \
+  -F "file=@audio.wav" \
+  -F "method=saliency"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "explanation_type": "saliency",
+  "heatmap": "data:image/png;base64,...",
+  "top_features": [
+    ["mfcc_12", 0.21],
+    ["mfcc_5", 0.18],
+    ...
+  ],
+  "per_time_importance": [0.1, 0.2, ...],
+  "per_feature_importance": [0.05, 0.12, ...]
 }
 ```
 
@@ -155,6 +221,56 @@ This system implements advanced techniques for depression detection from speech:
 - **Temporal Modeling**: Capturing long-term speech patterns
 - **Robust Training**: Handling small datasets with heavy augmentation
 
+## 🔬 **Advanced Features**
+
+### Explainability
+
+The system provides two explainability methods:
+
+1. **Saliency Maps / Integrated Gradients**: Visualize feature importance using gradients
+   - Location: `src/explain/saliency.py`
+   - Endpoint: `/api/explain?method=saliency`
+
+2. **SHAP Values**: Feature importance using SHAP
+   - Location: `src/explain/shap_explain.py`
+   - Endpoint: `/api/explain?method=shap`
+
+See `notebooks/explainability_demo.ipynb` for examples.
+
+### Alternative Model Architectures
+
+Train different model architectures:
+
+```bash
+# Train CNN-LSTM model
+python train_experiments.py --model cnn_lstm --data data/training_data.csv --epochs 50
+
+# Train Transformer model
+python train_experiments.py --model transformer --data data/training_data.csv --epochs 50
+```
+
+See `docs/temporal_models.md` for details.
+
+### Language Detection & OOD Detection
+
+The system includes:
+- **Language Detection**: Detects language of audio (requires transcript or assumes English)
+- **Out-of-Distribution Detection**: Flags samples that differ significantly from training data
+
+Both are included in `/api/predict` response.
+
+### Evaluation & Metrics
+
+```bash
+# Split dataset into train/val/test
+python scripts/split_dataset.py --data data/training_data.csv --output_dir data
+
+# Evaluate predictions
+python scripts/evaluate.py --predictions predictions.json --labels labels.json --output_dir reports
+```
+
+See `docs/evaluation.md` for evaluation protocol.
+
 ## 📝 **Citation**
 
 If you use this system in your research, please cite:
@@ -188,4 +304,16 @@ For questions or issues:
 
 ---
 
-**Note**: This system is for research purposes only and should not be used as a substitute for professional medical diagnosis.
+## ⚠️ **IMPORTANT DISCLAIMER**
+
+**This is a research demo. Not a medical device. Not for clinical diagnosis.**
+
+This system is for research and demonstration purposes only. It is NOT a medical device and should NOT be used for:
+- Clinical diagnosis or medical decision-making
+- Treatment recommendations
+- Standalone medical device use
+- Legal or insurance purposes
+
+**Always consult qualified healthcare professionals for mental health concerns.**
+
+For more details, see [MODEL_CARD.md](MODEL_CARD.md).

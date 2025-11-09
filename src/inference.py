@@ -13,12 +13,13 @@ sys.path.insert(0, current_dir)
 import torch
 import numpy as np
 import librosa
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
 import warnings
 warnings.filterwarnings('ignore')
 
 from model import DepressionDetectionModel
 from preprocessing import AudioPreprocessor
+from preprocessing.language_detection import detect_language_from_audio, is_supported_language
 
 
 class DepressionDetector:
@@ -69,6 +70,11 @@ class DepressionDetector:
         
         self.class_names = ['Healthy', 'Depressed']
         self.balance_predictions = balance_predictions
+        
+        # OOD detection: compute training set centroid (placeholder)
+        # In production, this should be computed from training data
+        self.training_centroid = None
+        self.ood_threshold = 0.5  # Cosine distance threshold
     
     def extract_audio_characteristics(self, audio_path):
         """
@@ -207,16 +213,55 @@ class DepressionDetector:
         
         return np.array([healthy_prob, depressed_prob])
     
-    def predict(self, audio_path, return_probabilities=True):
+    def detect_ood(self, features: np.ndarray) -> Tuple[bool, float]:
+        """
+        Detect out-of-distribution samples using embedding distance
+        
+        Args:
+            features: Feature vector (features, time_steps) or averaged
+            
+        Returns:
+            Tuple of (is_ood, distance)
+        """
+        # Flatten features to get embedding
+        if features.ndim > 1:
+            embedding = features.mean(axis=1)  # Average over time
+        else:
+            embedding = features
+        
+        # Normalize embedding
+        embedding_norm = embedding / (np.linalg.norm(embedding) + 1e-8)
+        
+        # Compute distance to training centroid if available
+        if self.training_centroid is not None:
+            centroid_norm = self.training_centroid / (np.linalg.norm(self.training_centroid) + 1e-8)
+            # Cosine distance
+            distance = 1.0 - np.dot(embedding_norm, centroid_norm)
+        else:
+            # Simple heuristic: check if features are too extreme
+            # Use variance as proxy for OOD
+            feature_variance = np.var(embedding)
+            # Threshold based on expected variance (heuristic)
+            expected_variance = 1.0  # Adjust based on training data
+            distance = abs(feature_variance - expected_variance) / expected_variance
+        
+        is_ood = distance > self.ood_threshold
+        
+        return is_ood, float(distance)
+    
+    def predict(self, audio_path, return_probabilities=True, 
+                return_language=False, return_ood=False):
         """
         Predict depression status from audio file
         
         Args:
             audio_path: Path to audio file
             return_probabilities: If True, return class probabilities
+            return_language: If True, return language detection
+            return_ood: If True, return OOD detection
             
         Returns:
-            prediction, confidence (and probabilities if requested)
+            prediction, confidence (and probabilities/language/ood if requested)
         """
         try:
             # Preprocess audio
@@ -248,14 +293,43 @@ class DepressionDetector:
             predicted_class = self.class_names[predicted_idx]
             confidence_score = enhanced_probs[predicted_idx]
             
+            # Language detection
+            language_info = None
+            if return_language:
+                language_info = detect_language_from_audio(audio_path)
+                # Check if language is supported
+                if not is_supported_language(language_info.get('lang', 'unknown')):
+                    # If language not supported, return None prediction
+                    if return_probabilities:
+                        return None, 0.0, {}, language_info, None
+                    return None, 0.0, language_info, None
+            
+            # OOD detection
+            ood_info = None
+            if return_ood:
+                is_ood, ood_distance = self.detect_ood(features)
+                ood_info = {
+                    'out_of_distribution': bool(is_ood),
+                    'distance': ood_distance
+                }
+            
+            # Build return value
+            result = [predicted_class, confidence_score]
+            
             if return_probabilities:
                 probs_dict = {
                     self.class_names[i]: enhanced_probs[i] 
                     for i in range(len(self.class_names))
                 }
-                return predicted_class, confidence_score, probs_dict
+                result.append(probs_dict)
             
-            return predicted_class, confidence_score
+            if return_language:
+                result.append(language_info)
+            
+            if return_ood:
+                result.append(ood_info)
+            
+            return tuple(result) if len(result) > 2 else (predicted_class, confidence_score)
             
         except Exception as e:
             raise RuntimeError(f"Prediction failed: {e}")

@@ -12,6 +12,7 @@ import json
 import base64
 from io import BytesIO
 import numpy as np
+import torch
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -22,6 +23,8 @@ import librosa.display
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from inference import DepressionDetector
+from explain.saliency import explain_audio
+from preprocessing.language_detection import is_supported_language
 
 app = Flask(__name__)
 # Configure CORS for both local and production
@@ -54,7 +57,6 @@ except Exception as e:
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 def generate_spectrogram_base64(audio_path):
     """Generate MFCC spectrogram and return as base64 string"""
@@ -142,10 +144,22 @@ def predict():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        # Run prediction
-        prediction, confidence, probabilities = detector.predict(
-            filepath, return_probabilities=True
+        # Run prediction with language and OOD detection
+        result = detector.predict(
+            filepath, 
+            return_probabilities=True,
+            return_language=True,
+            return_ood=True
         )
+        
+        # Unpack results
+        if len(result) == 5:
+            prediction, confidence, probabilities, language_info, ood_info = result
+        else:
+            # Fallback for older API
+            prediction, confidence, probabilities = result
+            language_info = None
+            ood_info = None
         
         # Generate spectrogram
         spectrogram_base64 = generate_spectrogram_base64(filepath)
@@ -158,13 +172,36 @@ def predict():
             'status': 'success',
             'prediction': prediction,
             'confidence': float(confidence),
-            'probabilities': {
-                'Healthy': float(probabilities['Healthy']),
-                'Depressed': float(probabilities['Depressed'])
+            'class_probs': {
+                'Healthy': float(probabilities.get('Healthy', 0.0)),
+                'Depressed': float(probabilities.get('Depressed', 0.0))
             },
             'spectrogram': spectrogram_base64,
             'model_accuracy': '75%'
         }
+        
+        # Add language info if available
+        if language_info:
+            response['language'] = {
+                'lang': language_info.get('lang', 'unknown'),
+                'confidence': float(language_info.get('confidence', 0.0))
+            }
+        
+        # Add OOD info if available
+        if ood_info:
+            response['out_of_distribution'] = ood_info.get('out_of_distribution', False)
+            if 'distance' in ood_info:
+                response['ood_distance'] = float(ood_info['distance'])
+        
+        # Handle unsupported language
+        if language_info and not is_supported_language(language_info.get('lang', 'unknown')):
+            response['prediction'] = None
+            response['reason'] = 'language_not_supported'
+        
+        # Handle OOD
+        if ood_info and ood_info.get('out_of_distribution', False):
+            response['prediction'] = None
+            response['reason'] = 'out_of_distribution'
         
         return jsonify(response)
     
@@ -226,6 +263,84 @@ def get_info():
             ]
         }
     })
+
+
+@app.route('/api/explain', methods=['POST'])
+def explain():
+    """
+    Generate explainability visualization for audio prediction
+    
+    Returns:
+        JSON with explanation (heatmap, top features, etc.)
+    """
+    if detector is None:
+        return jsonify({
+            'error': 'Model not loaded. Please ensure model file exists.'
+        }), 500
+    
+    # Check if file is present
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Invalid file type. Allowed: .wav, .mp3, .flac'}), 400
+    
+    try:
+        # Save file
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Get method (default: saliency)
+        method = request.form.get('method', 'saliency')
+        
+        # Preprocess audio
+        segments = detector.preprocessor.process(filepath)
+        
+        if segments is None or len(segments) == 0:
+            raise ValueError("Failed to extract features from audio")
+        
+        # Average across segments for single prediction
+        features = np.mean(segments, axis=0)
+        features_tensor = torch.FloatTensor(features).unsqueeze(0).to(detector.device)
+        
+        # Generate explanation
+        explanation = explain_audio(
+            detector.model,
+            features_tensor,
+            method=method,
+            device=detector.device
+        )
+        
+        # Clean up uploaded file
+        os.remove(filepath)
+        
+        # Prepare response
+        response = {
+            'status': 'success',
+            'explanation_type': explanation.get('explanation_type', method),
+            'heatmap': explanation.get('heatmap', ''),
+            'top_features': explanation.get('top_features', []),
+            'per_time_importance': explanation.get('per_time_importance', []),
+            'per_feature_importance': explanation.get('per_feature_importance', [])
+        }
+        
+        return jsonify(response)
+    
+    except Exception as e:
+        # Clean up file if it exists
+        if 'filepath' in locals() and os.path.exists(filepath):
+            os.remove(filepath)
+        
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 
 if __name__ == '__main__':

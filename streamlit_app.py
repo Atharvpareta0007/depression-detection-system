@@ -392,6 +392,9 @@ def main():
     st.markdown('<p class="main-header">🧠 Depression Detection System</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Maximum Accuracy AI Model - Enhanced Neural Architecture</p>', unsafe_allow_html=True)
     
+    # Disclaimer banner
+    st.warning("⚠️ **IMPORTANT DISCLAIMER**: This is a research demo. Not a medical device. Not for clinical diagnosis. Always consult qualified healthcare professionals for mental health concerns.")
+    
     # Accuracy badge
     st.markdown(
         '<div style="text-align: center;"><span class="accuracy-badge">🎯 75% Accuracy Model</span></div>', 

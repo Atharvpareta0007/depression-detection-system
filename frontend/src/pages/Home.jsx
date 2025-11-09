@@ -285,11 +285,13 @@ export default function Home() {
           <AlertTriangle className="w-8 h-8 text-yellow-400 flex-shrink-0 pulse-glow" />
           <div>
             <h3 className="font-bold text-2xl text-yellow-400 mb-3">Important Disclaimer</h3>
+            <p className="text-gray-300 text-base leading-relaxed mb-3">
+              <strong className="text-white">This is a research demo. Not a medical device. Not for clinical diagnosis.</strong>
+            </p>
             <p className="text-gray-300 text-base leading-relaxed">
-              This tool is for <strong className="text-white">research and educational purposes only</strong>. 
-              It should NOT be used for clinical diagnosis or replace professional medical evaluation. 
-              If you or someone you know is experiencing symptoms of depression, please consult 
-              a qualified healthcare professional or mental health provider.
+              This system is for research and demonstration purposes only. It is NOT a medical device and should NOT be used for:
+              clinical diagnosis or medical decision-making, treatment recommendations, standalone medical device use, or legal/insurance purposes.
+              Always consult qualified healthcare professionals for mental health concerns.
             </p>
           </div>
         </div>
